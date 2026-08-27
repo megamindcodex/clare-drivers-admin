@@ -1,0 +1,57 @@
+{
+  "name": "clare-drivers-admin",
+  "version": "1.0.0",
+  "description": "admin backend for clare motos logistics driver management",
+  "license": "ISC",
+  "author": "megamindcodex",
+  "type": "module",
+  "main": "index.js",
+  "imports": {
+    "#controllers/*": "./src/app/controllers/*",
+    "#routes/*": "./src/app/routes/*",
+    "#handlers/*": "./src/app/handlers/*",
+    "#middlewares/*": "./src/app/middlewares/*",
+    "#validators/*": "./src/app/validators/*",
+    "#queues/*": "./src/app/queues/*",
+    "#errors/*": "./src/app/errors/*",
+    "#utils/*": "./src/app/utils/*",
+    "#constants/*": "./src/app/constants/*",
+    "#configs/*": "./src/configs/*",
+    "#db/*": "./src/db/*",
+    "#workers/*": "./src/workers/*"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "worker": "node src/workers/email.worker.js",
+    "worker:dev": "nodemon src/workers/email.worker.js",
+    "start:all": "bash boot.sh",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "node src/db/prisma/seeders/driver.seeder.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.1.0",
+    "argon2": "^0.45.1",
+    "bullmq": "^5.34.0",
+    "connect-redis": "^10.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.4.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.9.3",
+    "morgan": "^1.10.0",
+    "pm2": "^7.0.3",
+    "redis": "^6.2.1",
+    "winston": "^3.17.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
+    "nodemon": "^3.1.9",
+    "prisma": "^6.1.0"
+  }
+}

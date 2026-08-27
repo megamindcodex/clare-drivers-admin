@@ -1,0 +1,130 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum VehicleType {
+  Car
+  Bike
+  Keke
+}
+
+enum DriverVerificationStatus {
+  False
+  Pending
+  Rejected
+  Approved
+}
+
+model Driver {
+  id                         Int                      @id @default(autoincrement())
+  driverId                   String                   @unique @default(uuid())
+  profilePicUrl              String?                  @map("profile_pic_url")
+  firstName                  String                   @map("first_name")
+  lastName                   String                   @map("last_name")
+  country                    String?
+  phoneNumber                String                   @unique @map("phone_number")
+  email                      String                   @unique
+  password                   String
+  vehicleType                VehicleType              @map("vehicle_type")
+  category                   String?
+  brand                      String?
+  model                      String?
+  modelYear                  String?                  @map("model_year")
+  vehicleColor               String?                  @map("vehicle_color")
+  registrationDate           String?                  @map("registration_date")
+  plateNumber                String                   @unique @map("plate_number")
+  drivingLicense             String?                  @unique @map("driving_license")
+  ninIdentification          String?                  @unique @map("nin_identification")
+  rate                       String
+  rating                     Float
+  status                     String                   @default("inactive")
+  isVerified                 Boolean                  @map("is_verified")
+  isApproved                 DriverVerificationStatus @default(False) @map("is_approved")
+  createdAt                  DateTime                 @default(now()) @map("created_at")
+  updatedAt                  DateTime                 @updatedAt @map("updated_at")
+  resetPasswordToken         String?                  @map("reset_password_token")
+  resetPasswordExpiresAt     DateTime?                @map("reset_password_expires_at")
+  verificationToken          String?                  @map("verification_token")
+  verificationTokenExpiresAt DateTime?                @map("verification_token_expires_at")
+
+  documents DriverDocuments?
+
+  @@map("drivers")
+}
+
+model DriverDocuments {
+  id             Int      @id @default(autoincrement())
+  driverId       String   @unique @map("driver_id")
+  driver         Driver   @relation(fields: [driverId], references: [driverId])
+  ninUrl         String?  @map("nin_url")
+  frontViewUrl   String?  @map("front_view_url")
+  backViewUrl    String?  @map("back_view_url")
+  insideViewUrl  String?  @map("inside_view_url")
+  sideViewUrl    String?  @map("side_view_url")
+  plateNumberUrl String?  @map("plate_number_url")
+  insuranceUrl   String?  @map("insurance_url")
+  rejectComment  String?  @map("reject_comment")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("driver_documents")
+}
+
+model ActiveDrivers {
+  driverId    String   @id @map("driver_id")
+  name        String
+  image       String?
+  vehicleType String   @map("vehicle_type")
+  category    String?
+  phone       String
+  driverStats Float    @map("driver_stats")
+  ratings     Float
+  rate        String
+  plateNumber String   @map("plate_number")
+  latitude    Float?
+  longitude   Float?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("active_drivers")
+}
+
+enum UserRole {
+  User
+  Admin
+  SuperAdmin
+}
+
+enum UserStatus {
+  Active
+  Suspended
+  Banned
+}
+
+model User {
+  id               Int        @id @default(autoincrement())
+  userId           String     @unique @default(uuid()) @map("user_id")
+  username         String     @unique
+  email            String     @unique
+  password         String
+  role             UserRole   @default(User)
+  status           UserStatus @default(Active)
+  lastLogin        DateTime?  @map("last_login")
+  resetCode        String?    @map("reset_code")
+  resetCodeExpires DateTime?  @map("reset_code_expires")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  @@map("users")
+}
