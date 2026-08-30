@@ -5,8 +5,9 @@
   "license": "ISC",
   "author": "megamindcodex",
   "type": "module",
-  "main": "index.js",
+  "main": "src/index.js",
   "imports": {
+    "#bootstrap/*": "./src/bootstrap/*",
     "#controllers/*": "./src/app/controllers/*",
     "#routes/*": "./src/app/routes/*",
     "#handlers/*": "./src/app/handlers/*",
@@ -21,8 +22,8 @@
     "#workers/*": "./src/workers/*"
   },
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
     "worker": "node src/workers/email.worker.js",
     "worker:dev": "nodemon src/workers/email.worker.js",
     "start:all": "bash boot.sh",

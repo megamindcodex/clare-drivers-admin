@@ -22,17 +22,14 @@ process.on("SIGINT", () => disconnectPrisma("SIGINT"));
 process.on("SIGTERM", () => disconnectPrisma("SIGTERM"));
 
 /**
- * Connects Prisma to MySQL at startup, exiting the process on failure.
+ * Connects Prisma to MySQL at startup.
  * @returns {Promise<void>}
+ * @throws {Error} if the connection attempt fails — the caller is
+ *   responsible for handling this (see {@link crashAndExit}).
  */
 const connectPrisma = async () => {
-  try {
-    await prisma.$connect();
-    logger.info("MySQL (Prisma) connected.");
-  } catch (error) {
-    logger.error(error);
-    process.exit(1);
-  }
+  await prisma.$connect();
+  logger.info("MySQL (Prisma) connected.");
 };
 
 export default connectPrisma;

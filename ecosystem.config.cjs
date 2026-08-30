@@ -11,7 +11,7 @@ module.exports = {
     },
     {
       name: "clare-express-app",
-      script: "index.js",
+      script: "src/index.js",
       cwd: __dirname,
       autorestart: true,
       max_restarts: 10,

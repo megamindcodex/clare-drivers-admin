@@ -1,4 +1,4 @@
-import { startApp } from "./src/start-app.js";
+import { startApp } from "#bootstrap/start-app.js";
 
 startApp().catch((error) => {
   console.error(error);

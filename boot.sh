@@ -64,4 +64,18 @@ done
 echo "All databases are up. Starting worker and express via PM2..."
 pm2 start ecosystem.config.cjs   # PM2 starts "worker" then "express", in the order listed in that file.
 
+# --- Step 4: watch the pm2 process group -----------------------------------
+# Per-app max_restarts in ecosystem.config.cjs only stops that one app once
+# it exhausts its own restarts — pm2 has no built-in way to take the rest of
+# the group down with it, so a dead clare-express-app can sit next to a
+# perfectly healthy email-worker indefinitely. pm2-watchdog.js closes that
+# gap: the moment any watched app lands in pm2's "errored" state, it stops
+# every app in the group together.
+# App names are read from ecosystem.config.cjs itself (not hardcoded here)
+# so this never drifts out of sync with what's actually being started above.
+echo "Starting pm2-watchdog.js to monitor the process group..."
+APP_NAMES=$(node -e "console.log(require('./ecosystem.config.cjs').apps.map((app) => app.name).join(' '))")
+nohup node pm2-watchdog.js $APP_NAMES > pm2-watchdog.log 2>&1 &
+echo "pm2-watchdog running in background (PID $!), logging to pm2-watchdog.log."
+
 echo "Done."

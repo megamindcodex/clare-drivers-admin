@@ -2,7 +2,7 @@
 
 > Scope: this document covers the **API / route layer only** — every HTTP endpoint the client can call, what it expects, and what it returns. It does not describe internal handler/repository logic. A handler-layer reference may be written separately later.
 >
-> Base URL: all routes below are relative to the API's root, e.g. `http://localhost:{PORT}`. Route prefixes (`/api/auth`, `/api/drivers`, `/api/users`) are fixed and mounted in `src/start-express.js`.
+> Base URL: all routes below are relative to the API's root, e.g. `http://localhost:{PORT}`. Route prefixes (`/api/auth`, `/api/drivers`, `/api/users`) are fixed and mounted in `src/bootstrap/express-app.factory.js`.
 >
 > CORS: the API only accepts cross-origin requests from the single origin configured via the `CLIENT_ORIGIN` env var (default `http://localhost:5173` for local dev — see `src/configs/env.js`). Because `POST /api/auth/login`, `POST /api/auth/refresh-token`, and `POST /api/auth/logout` rely on an `httpOnly` cookie, a browser client **must** send requests with credentials included (e.g. axios `withCredentials: true`, or `fetch(..., { credentials: "include" })`) — the server responds with a matching `Access-Control-Allow-Origin: <CLIENT_ORIGIN>` and `Access-Control-Allow-Credentials: true`, which is required for the browser to accept a credentialed cross-origin response at all.
 

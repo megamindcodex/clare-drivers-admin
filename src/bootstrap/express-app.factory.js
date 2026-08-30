@@ -16,7 +16,7 @@ import { env } from "#configs/env.js";
  * routes, and the centralized error handler.
  * @returns {import("express").Express} The configured Express app, ready to `listen`.
  */
-const startExpressApp = () => {
+const createExpressApp = () => {
   /** @type {import("express").Express} */
   const app = express();
 
@@ -38,4 +38,4 @@ const startExpressApp = () => {
   return app;
 };
 
-export default startExpressApp;
+export default createExpressApp;
