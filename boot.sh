@@ -61,8 +61,10 @@ done
 
 # --- Step 3: start the app processes --------------------------------------
 # Only reached once all three databases are confirmed running.
+# `npx pm2` (not bare `pm2`) so this works from pm2's local dependency in
+# node_modules — no global `npm install -g pm2` required on the machine.
 echo "All databases are up. Starting worker and express via PM2..."
-pm2 start ecosystem.config.cjs   # PM2 starts "worker" then "express", in the order listed in that file.
+npx pm2 start ecosystem.config.cjs   # PM2 starts "worker" then "express", in the order listed in that file.
 
 # --- Step 4: watch the pm2 process group -----------------------------------
 # Per-app max_restarts in ecosystem.config.cjs only stops that one app once

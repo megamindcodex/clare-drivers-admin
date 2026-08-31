@@ -22,7 +22,10 @@ import {
 /**
  * User resource routes: listing, detail lookup, promotion to Admin,
  * suspension, and banning of non-SuperAdmin users. Every route requires
- * authentication and the matching permission.
+ * authentication and the matching permission. "user:read" (listing and
+ * detail lookup) is granted only to SuperAdmin (via the wildcard) — see
+ * RolePermissions in permission.constant.js — so only a SuperAdmin can
+ * fetch the admin roster or an individual admin's details.
  * @type {import("express").Router}
  */
 const router = Router();

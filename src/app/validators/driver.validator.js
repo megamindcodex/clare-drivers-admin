@@ -81,6 +81,32 @@ export const getDriverDocumentSchema = z.object({
 });
 
 /**
+ * Validates the route params for fetching a driver's full (driver +
+ * documents, flattened) data by driver ID.
+ * @type {import("zod").ZodType}
+ */
+export const getDriversFullDataSchema = z.object({
+  body: z.object({}).passthrough(),
+  params: z.object({
+    driverId: driverIdSchema,
+  }),
+  query: z.object({}).passthrough(),
+});
+
+/**
+ * Validates the route params for toggling a driver's isVerified flag. No
+ * body — it's a toggle of the current value, not a caller-supplied one.
+ * @type {import("zod").ZodType}
+ */
+export const toggleIsVerifiedSchema = z.object({
+  body: z.object({}).passthrough(),
+  params: z.object({
+    driverId: driverIdSchema,
+  }),
+  query: z.object({}).passthrough(),
+});
+
+/**
  * Validates the payload for updating a driver's approval status.
  * @type {import("zod").ZodType}
  */

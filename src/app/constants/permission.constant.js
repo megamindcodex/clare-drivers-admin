@@ -11,6 +11,7 @@ export const Permissions = {
   DRIVER_READ: "driver:read",
   DRIVER_READ_DOCUMENTS: "driver:read-documents",
   DRIVER_APPROVE: "driver:approve",
+  DRIVER_VERIFY: "driver:verify",
   USER_READ: "user:read",
   USER_PROMOTE: "user:promote",
   USER_SUSPEND: "user:suspend",
@@ -32,6 +33,9 @@ export const PERMISSION_WILDCARD = "*";
  * empty: a freshly-registered account has no permissions at all until
  * SuperAdmin promotes it to "Admin" — the only thing it can reach is its own
  * profile (GET /me), which isn't permission-gated at all (see auth.routes.js).
+ * "user:read" is deliberately absent from Admin's list — only SuperAdmin
+ * (via the wildcard) may fetch the admin roster or an individual admin's
+ * details.
  * @type {Record<string, string[]>}
  */
 export const RolePermissions = {
@@ -40,7 +44,7 @@ export const RolePermissions = {
     Permissions.DRIVER_READ,
     Permissions.DRIVER_READ_DOCUMENTS,
     Permissions.DRIVER_APPROVE,
-    Permissions.USER_READ,
+    Permissions.DRIVER_VERIFY,
   ],
   [UserRole.User]: [],
 };

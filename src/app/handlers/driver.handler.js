@@ -33,6 +33,23 @@ const SAFE_DRIVER_SELECT = {
 };
 
 /**
+ * Document fields to merge into the flat getFullData response. Deliberately
+ * excludes the documents row's own id/driverId/createdAt/updatedAt — those
+ * would otherwise silently overwrite the driver record's own same-named
+ * fields once the two objects are flattened together.
+ */
+const SAFE_DRIVER_DOCUMENT_SELECT = {
+  ninUrl: true,
+  frontViewUrl: true,
+  backViewUrl: true,
+  insideViewUrl: true,
+  sideViewUrl: true,
+  plateNumberUrl: true,
+  insuranceUrl: true,
+  rejectComment: true,
+};
+
+/**
  * Fetches drivers, optionally narrowed by filter criteria. With no filters
  * provided, returns every driver.
  * @param {Object} [filters] - Optional filter criteria.
@@ -113,6 +130,32 @@ export const getDriverDocument = async (driverId, callerUserId) => {
 };
 
 /**
+ * Fetches a driver's record and their uploaded documents together, merged
+ * into a single flat object. A driver with no documents record yet still
+ * returns successfully — the document fields are simply absent.
+ * @param {string} driverId - The driver's UUID.
+ * @param {string} callerUserId - The caller's ID, from the verified access token.
+ * @returns {Promise<Object>} The driver record merged with its document fields.
+ * @throws {AppError} NOT_FOUND - if no driver matches driverId.
+ */
+export const getDriversFullData = async (driverId, callerUserId) => {
+  await assertActiveUser(callerUserId);
+
+  const [driver, driverDocument] = await Promise.all([
+    prisma.driver.findUnique({ where: { driverId }, select: SAFE_DRIVER_SELECT }),
+    prisma.driverDocuments.findUnique({ where: { driverId }, select: SAFE_DRIVER_DOCUMENT_SELECT }),
+  ]);
+
+  if (!driver) {
+    throw new AppError("Driver not found.", {
+      code: ErrorCodes.NOT_FOUND,
+    });
+  }
+
+  return { ...driver, ...driverDocument };
+};
+
+/**
  * Updates a driver's approval status.
  * @param {Object} params
  * @param {string} params.driverId - The driver's UUID.
@@ -136,6 +179,31 @@ export const updateApproveField = async ({ driverId, isApproved, callerUserId })
     where: { driverId },
     data: { isApproved },
     select: SAFE_DRIVER_SELECT,
+  });
+};
+
+/**
+ * Toggles a driver's isVerified flag to the opposite of its current value.
+ * @param {string} driverId - The driver's UUID.
+ * @param {string} callerUserId - The caller's ID, from the verified access token.
+ * @returns {Promise<{ isVerified: boolean }>} The driver's new isVerified value.
+ * @throws {AppError} NOT_FOUND - if no driver matches driverId.
+ */
+export const toggleIsVerified = async (driverId, callerUserId) => {
+  await assertActiveUser(callerUserId);
+
+  const driver = await prisma.driver.findUnique({ where: { driverId }, select: { isVerified: true } });
+
+  if (!driver) {
+    throw new AppError("Driver not found.", {
+      code: ErrorCodes.NOT_FOUND,
+    });
+  }
+
+  return prisma.driver.update({
+    where: { driverId },
+    data: { isVerified: !driver.isVerified },
+    select: { isVerified: true },
   });
 };
 

@@ -2,7 +2,9 @@ import {
   getDrivers as getDriversHandler,
   getDriverById as getDriverByIdHandler,
   getDriverDocument as getDriverDocumentHandler,
+  getDriversFullData as getDriversFullDataHandler,
   updateApproveField as updateApproveFieldHandler,
+  toggleIsVerified as toggleIsVerifiedHandler,
   getActiveDrivers as getActiveDriversHandler,
   getActiveDriverById as getActiveDriverByIdHandler,
 } from "#handlers/driver.handler.js";
@@ -47,6 +49,20 @@ export const getDriverDocument = async (req, res, next) => {
 };
 
 /**
+ * Fetches a driver's record merged with their uploaded documents into one
+ * flat object, by the driver ID in the validated route params.
+ * @type {import("express").RequestHandler}
+ */
+export const getDriversFullData = async (req, res, next) => {
+  try {
+    const driver = await getDriversFullDataHandler(req.validated.params.driverId, req.user.userId);
+    return res.status(200).json({ data: { driver } });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
  * Updates a driver's approval status from the validated route params and body.
  * @type {import("express").RequestHandler}
  */
@@ -56,6 +72,19 @@ export const updateApproveField = async (req, res, next) => {
     const { isApproved } = req.validated.body;
     const driver = await updateApproveFieldHandler({ driverId, isApproved, callerUserId: req.user.userId });
     return res.status(200).json({ data: { driver } });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * Toggles a driver's isVerified flag, by the driver ID in the validated route params.
+ * @type {import("express").RequestHandler}
+ */
+export const toggleIsVerified = async (req, res, next) => {
+  try {
+    const { isVerified } = await toggleIsVerifiedHandler(req.validated.params.driverId, req.user.userId);
+    return res.status(200).json({ data: { isVerified } });
   } catch (error) {
     return next(error);
   }

@@ -28,8 +28,9 @@ const generateResetCode = () => {
 };
 
 /**
- * Registers a new account with role "User" — no permissions until a
- * SuperAdmin promotes it to "Admin" (see promoteToAdmin in user.handler.js).
+ * Registers a new account, always granted role "Admin" directly — there is
+ * no separate promotion step. "SuperAdmin" can never be created this way;
+ * it only ever exists via seedSuperAdmin at application startup.
  * @param {Object} params
  * @param {string} params.username - Desired username.
  * @param {string} params.email - Account email address.
@@ -55,7 +56,7 @@ export const register = async ({ username, email, password }) => {
       username,
       email,
       password: hashedPassword,
-      role: UserRole.User,
+      role: UserRole.Admin,
     },
     select: SAFE_USER_SELECT,
   });

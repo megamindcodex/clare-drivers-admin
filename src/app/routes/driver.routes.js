@@ -4,7 +4,9 @@ import {
   getDrivers,
   getDriverById,
   getDriverDocument,
+  getDriversFullData,
   updateApproveField,
+  toggleIsVerified,
   getActiveDrivers,
   getActiveDriverById,
 } from "#controllers/driver.controller.js";
@@ -16,17 +18,20 @@ import {
   getDriversSchema,
   getDriverByIdSchema,
   getDriverDocumentSchema,
+  getDriversFullDataSchema,
   updateApproveFieldSchema,
+  toggleIsVerifiedSchema,
   getActiveDriversSchema,
   getActiveDriverByIdSchema,
 } from "#validators/driver.validator.js";
 
 /**
- * Driver resource routes: listing, detail lookup, document lookup,
- * approval-status updates, and active (live-tracked) driver lookups. Every
- * route requires authentication and the matching permission. The "/active"
- * routes are registered before "/:driverId" so their literal segment isn't
- * shadowed by the dynamic param route.
+ * Driver resource routes: listing, detail lookup, document lookup, combined
+ * driver+document ("full data") lookup, approval-status updates, isVerified
+ * toggling, and active (live-tracked) driver lookups. Every route requires
+ * authentication and the matching permission. The "/active" routes are
+ * registered before "/:driverId" so their literal segment isn't shadowed by
+ * the dynamic param route.
  * @type {import("express").Router}
  */
 const router = Router();
@@ -66,12 +71,27 @@ router.get(
   validateRequest(getDriverDocumentSchema),
   getDriverDocument
 );
+router.get(
+  "/:driverId/full-data",
+  authenticate,
+  requirePermission(Permissions.DRIVER_READ),
+  requirePermission(Permissions.DRIVER_READ_DOCUMENTS),
+  validateRequest(getDriversFullDataSchema),
+  getDriversFullData
+);
 router.patch(
   "/:driverId/approve",
   authenticate,
   requirePermission(Permissions.DRIVER_APPROVE),
   validateRequest(updateApproveFieldSchema),
   updateApproveField
+);
+router.patch(
+  "/:driverId/isVerified",
+  authenticate,
+  requirePermission(Permissions.DRIVER_VERIFY),
+  validateRequest(toggleIsVerifiedSchema),
+  toggleIsVerified
 );
 
 export default router;

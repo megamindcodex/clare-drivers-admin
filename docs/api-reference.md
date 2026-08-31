@@ -22,8 +22,8 @@ Every route except `POST /api/auth/register`, `POST /api/auth/login`, `POST /api
 
 | Role | Permissions |
 |---|---|
-| `User` | None. A freshly registered account can only reach `GET /api/auth/me`. |
-| `Admin` | `driver:read`, `driver:read-documents`, `driver:approve`, `user:read` |
+| `User` | None. Exists in the schema, but no current flow creates a `User`-role account — registering grants `Admin` directly. |
+| `Admin` | `driver:read`, `driver:read-documents`, `driver:approve`, `driver:verify` |
 | `SuperAdmin` | Everything (wildcard — every permission, including ones added in the future) |
 
 A suspended or banned account is blocked from every authenticated route (including `GET /api/auth/me`) the moment the check runs, even if its access token hasn't expired yet — see the `ACCOUNT_SUSPENDED` / `ACCOUNT_BANNED` error codes below. A **suspended** account can still log in; a **banned** account cannot.
@@ -46,7 +46,9 @@ A suspended or banned account is blocked from every authenticated route (includi
 | Get active driver by ID | `GET` | `/api/drivers/active/:driverId` | ✅ | `driver:read` |
 | Get driver by ID | `GET` | `/api/drivers/:driverId` | ✅ | `driver:read` |
 | Get driver's documents | `GET` | `/api/drivers/:driverId/documents` | ✅ | `driver:read-documents` |
+| Get driver's full data (driver + documents, flattened) | `GET` | `/api/drivers/:driverId/full-data` | ✅ | `driver:read` **and** `driver:read-documents` |
 | Update driver approval status | `PATCH` | `/api/drivers/:driverId/approve` | ✅ | `driver:approve` |
+| Toggle driver isVerified flag | `PATCH` | `/api/drivers/:driverId/isVerified` | ✅ | `driver:verify` |
 | List users | `GET` | `/api/users` | ✅ | `user:read` |
 | Get user by ID | `GET` | `/api/users/:userId` | ✅ | `user:read` |
 | Promote user to Admin | `PATCH` | `/api/users/:userId/promote` | ✅ | `user:promote` |
@@ -209,7 +211,7 @@ Any of the URL fields, and `rejectComment`, may be `null` if not yet uploaded / 
 
 ### `POST /api/auth/register`
 
-Creates a new account. New accounts are always created with role `"User"` — no permissions until a `SuperAdmin` promotes it (see `PATCH /api/users/:userId/promote`).
+Creates a new account. New accounts are always created with role `"Admin"` directly — there is no separate promotion step. `"SuperAdmin"` can never be created this way; it only ever exists via the one seeded at application startup.
 
 **Input — body:**
 
@@ -229,7 +231,7 @@ Creates a new account. New accounts are always created with role `"User"` — no
       "userId": "b3b3c3a0-3f9a-4b8e-9c1a-1f2e3d4c5b6a",
       "username": "jane_admin",
       "email": "jane@example.com",
-      "role": "User",
+      "role": "Admin",
       "status": "Active",
       "lastLogin": null,
       "createdAt": "2026-01-05T09:00:00.000Z",
@@ -779,6 +781,83 @@ curl http://localhost:4000/api/drivers/0f1e2d3c-4b5a-6978-8990-a1b2c3d4e5f6/docu
 
 ---
 
+### `GET /api/drivers/:driverId/full-data`
+
+Fetches a driver's record and their uploaded documents together, merged into a single flat object — one round-trip instead of separately calling `GET /api/drivers/:driverId` and `GET /api/drivers/:driverId/documents`.
+
+The response is the full `Driver` object (see Section 3's shared shape) with the `DriverDocument` object's content fields (`ninUrl`, `frontViewUrl`, `backViewUrl`, `insideViewUrl`, `sideViewUrl`, `plateNumberUrl`, `insuranceUrl`, `rejectComment`) merged directly onto it at the top level — **not** nested under a `document` key. The documents row's own `id`, `driverId`, `createdAt`, and `updatedAt` are deliberately dropped from the merge (only the `Driver` record's versions of those fields are kept), so there's no field collision between the two source records. If the driver has no documents uploaded yet, the document fields are simply absent — this is not an error.
+
+**Permission:** `driver:read` **and** `driver:read-documents` (both required — this route exposes everything either individual route does)
+
+**Input — params:**
+
+| Field | Type | Rules |
+|---|---|---|
+| `driverId` | string | valid UUID |
+
+**Response — `200 OK`:**
+
+```json
+{
+  "data": {
+    "driver": {
+      "id": 41,
+      "driverId": "0f1e2d3c-4b5a-6978-8990-a1b2c3d4e5f6",
+      "profilePicUrl": "https://.../profile.jpg",
+      "firstName": "John",
+      "lastName": "Doe",
+      "country": "Nigeria",
+      "phoneNumber": "+2348012345678",
+      "email": "john.doe@example.com",
+      "vehicleType": "Car",
+      "category": "Standard",
+      "brand": "Toyota",
+      "model": "Corolla",
+      "modelYear": "2019",
+      "vehicleColor": "Blue",
+      "registrationDate": "2024-03-01",
+      "plateNumber": "ABC-123-XY",
+      "drivingLicense": "DL-00012345",
+      "ninIdentification": "12345678901",
+      "rate": "500",
+      "rating": 4.7,
+      "status": "active",
+      "isVerified": true,
+      "isApproved": "Approved",
+      "createdAt": "2026-01-10T08:00:00.000Z",
+      "updatedAt": "2026-02-01T12:00:00.000Z",
+      "ninUrl": "https://.../nin.jpg",
+      "frontViewUrl": "https://.../front.jpg",
+      "backViewUrl": "https://.../back.jpg",
+      "insideViewUrl": "https://.../inside.jpg",
+      "sideViewUrl": "https://.../side.jpg",
+      "plateNumberUrl": "https://.../plate.jpg",
+      "insuranceUrl": "https://.../insurance.jpg",
+      "rejectComment": null
+    }
+  }
+}
+```
+
+Any of the document URL fields, and `rejectComment`, may be `null`/absent if not yet uploaded or no documents record exists at all for this driver.
+
+**Errors:**
+
+| Code | Status | When |
+|---|---|---|
+| `VALIDATION_ERROR` | 422 | `driverId` is not a valid UUID. |
+| `FORBIDDEN` | 403 | Caller's role lacks `driver:read` or lacks `driver:read-documents`. |
+| `NOT_FOUND` | 404 | No driver matches `driverId`. |
+
+**Example:**
+
+```bash
+curl http://localhost:4000/api/drivers/0f1e2d3c-4b5a-6978-8990-a1b2c3d4e5f6/full-data \
+  -H "Authorization: Bearer eyJhbGciOi..."
+```
+
+---
+
 ### `PATCH /api/drivers/:driverId/approve`
 
 Updates a driver's approval status.
@@ -850,6 +929,45 @@ curl -X PATCH http://localhost:4000/api/drivers/0f1e2d3c-4b5a-6978-8990-a1b2c3d4
   -H "Authorization: Bearer eyJhbGciOi..." \
   -H "Content-Type: application/json" \
   -d '{"isApproved":"Approved"}'
+```
+
+---
+
+### `PATCH /api/drivers/:driverId/isVerified`
+
+Toggles a driver's `isVerified` flag to the opposite of its current value. This is a pure toggle, not a caller-supplied value — there is no request body.
+
+**Permission:** `driver:verify`
+
+**Input — params:**
+
+| Field | Type | Rules |
+|---|---|---|
+| `driverId` | string | valid UUID |
+
+**Input — body:** none.
+
+**Response — `200 OK`:**
+
+```json
+{ "data": { "isVerified": false } }
+```
+
+Only the new `isVerified` value is returned — `true` → `false` or `false` → `true`, whichever the driver's previous value wasn't. The rest of the `Driver` record is not included; fetch `GET /api/drivers/:driverId` (or `/full-data`) separately if you need it.
+
+**Errors:**
+
+| Code | Status | When |
+|---|---|---|
+| `VALIDATION_ERROR` | 422 | `driverId` is not a valid UUID. |
+| `FORBIDDEN` | 403 | Caller's role lacks `driver:verify`. |
+| `NOT_FOUND` | 404 | No driver matches `driverId`. |
+
+**Example:**
+
+```bash
+curl -X PATCH http://localhost:4000/api/drivers/0f1e2d3c-4b5a-6978-8990-a1b2c3d4e5f6/isVerified \
+  -H "Authorization: Bearer eyJhbGciOi..."
 ```
 
 ---
