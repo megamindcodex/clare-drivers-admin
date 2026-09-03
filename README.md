@@ -11,16 +11,7 @@ Node.js / Express backend for the Clare Motors Driver Administration project. Se
 
 ## Getting started
 
-```bash
-npm install
-cp .env.example .env   # then fill in real values
-npm run prisma:generate
-npm run prisma:migrate
-npm run dev             # API
-npm run worker:dev      # email worker, separate process
-```
-
-## Local infrastructure
+Full step-by-step instructions (env setup, starting the databases, running migrations, seeding the first SuperAdmin) are in [`SETUP.md`](SETUP.md) — follow that guide for a fresh clone, since the required order (databases must be up *before* running migrations) matters.
 
 `docker-compose.yml` spins up MongoDB, Redis, and MySQL for local development:
 
