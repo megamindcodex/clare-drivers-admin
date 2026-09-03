@@ -5,7 +5,7 @@ import dotenv from "dotenv";
  */
 dotenv.config();
 
-const requiredEnvVars = ["PORT", "MONGODB_URI", "REDIS_URL", "DATABASE_URL", "JWT_SECRET"];
+const requiredEnvVars = ["PORT", "MONGODB_URI", "REDIS_URL", "SQL_URI", "JWT_SECRET"];
 
 /**
  * Fails fast at startup if any critical environment variable is missing.
@@ -31,7 +31,7 @@ export const env = {
   sessionTtlSeconds: Number(process.env.SESSION_TTL_SECONDS ?? 43200),
   jwtSecret: process.env.JWT_SECRET,
   accessTokenExpiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN ?? "5m",
-  databaseUrl: process.env.DATABASE_URL,
+  databaseUrl: process.env.SQL_URI,
   superAdminUsername: process.env.SUPER_ADMIN_USERNAME,
   superAdminEmail: process.env.SUPER_ADMIN_EMAIL,
   superAdminPassword: process.env.SUPER_ADMIN_PASSWORD,

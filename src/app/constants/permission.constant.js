@@ -16,6 +16,7 @@ export const Permissions = {
   USER_PROMOTE: "user:promote",
   USER_SUSPEND: "user:suspend",
   USER_BAN: "user:ban",
+  OVERVIEW_READ: "overview:read",
 };
 
 /**
@@ -45,6 +46,7 @@ export const RolePermissions = {
     Permissions.DRIVER_READ_DOCUMENTS,
     Permissions.DRIVER_APPROVE,
     Permissions.DRIVER_VERIFY,
+    Permissions.OVERVIEW_READ,
   ],
   [UserRole.User]: [],
 };

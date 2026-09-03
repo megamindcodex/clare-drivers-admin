@@ -2,6 +2,23 @@ import { prisma } from "#db/prisma/prisma.connection.js";
 import { assertActiveUser } from "#handlers/user.handler.js";
 import { AppError } from "#errors/app-error.js";
 import { ErrorCodes } from "#errors/error-codes.js";
+import { canUpdateIsApprovedState } from "#utils/driver-approval.util.js";
+
+/**
+ * Minimal fields for the driver list view — deliberately excludes email and
+ * every other field `SAFE_DRIVER_SELECT` allows, since a list response is
+ * fetched far more often and at higher volume than a single driver's detail.
+ */
+const DRIVER_LIST_SELECT = {
+  id: true,
+  driverId: true,
+  profilePicUrl: true,
+  firstName: true,
+  lastName: true,
+  country: true,
+  isVerified: true,
+  isApproved: true,
+};
 
 /** Fields safe to return from a driver record — never the password hash or reset/verification tokens. */
 const SAFE_DRIVER_SELECT = {
@@ -60,7 +77,7 @@ const SAFE_DRIVER_DOCUMENT_SELECT = {
  * @param {string} [filters.country] - Exact match on country.
  * @param {string} [filters.search] - Partial match across name, email, phone, and plate number.
  * @param {string} callerUserId - The caller's ID, from the verified access token.
- * @returns {Promise<Array<Object>>} The matching driver records.
+ * @returns {Promise<Array<Object>>} The matching driver records, trimmed to list-view fields (see `DRIVER_LIST_SELECT`).
  */
 export const getDrivers = async (filters = {}, callerUserId) => {
   await assertActiveUser(callerUserId);
@@ -84,7 +101,7 @@ export const getDrivers = async (filters = {}, callerUserId) => {
     }),
   };
 
-  return prisma.driver.findMany({ where, select: SAFE_DRIVER_SELECT });
+  return prisma.driver.findMany({ where, select: DRIVER_LIST_SELECT });
 };
 
 /**
@@ -163,6 +180,7 @@ export const getDriversFullData = async (driverId, callerUserId) => {
  * @param {string} params.callerUserId - The caller's ID, from the verified access token.
  * @returns {Promise<Object>} The updated driver record.
  * @throws {AppError} NOT_FOUND - if no driver matches driverId.
+ * @throws {AppError} INVALID_APPROVAL_TRANSITION - if isApproved can't move from its current state to the intended state.
  */
 export const updateApproveField = async ({ driverId, isApproved, callerUserId }) => {
   await assertActiveUser(callerUserId);
@@ -174,6 +192,8 @@ export const updateApproveField = async ({ driverId, isApproved, callerUserId })
       code: ErrorCodes.NOT_FOUND,
     });
   }
+
+  canUpdateIsApprovedState({ currentState: driver.isApproved, intendedState: isApproved });
 
   return prisma.driver.update({
     where: { driverId },

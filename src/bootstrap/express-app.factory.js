@@ -7,6 +7,7 @@ import morgan from "morgan";
 import authRoutes from "#routes/auth.routes.js";
 import driverRoutes from "#routes/driver.routes.js";
 import userRoutes from "#routes/user.routes.js";
+import overviewRoutes from "#routes/overview.routes.js";
 import { errorHandler } from "#errors/error-handler.middleware.js";
 import { env } from "#configs/env.js";
 
@@ -32,6 +33,7 @@ const createExpressApp = () => {
   app.use("/api/auth", authRoutes);
   app.use("/api/drivers", driverRoutes);
   app.use("/api/users", userRoutes);
+  app.use("/api/overview", overviewRoutes);
 
   app.use(errorHandler);
 

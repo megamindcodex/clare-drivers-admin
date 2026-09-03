@@ -41,7 +41,7 @@ Then edit the values that matter for a fresh setup:
 
 * **`JWT_SECRET`** — must be set to something real; access tokens can't be signed with the placeholder value.
 * **`SUPER_ADMIN_USERNAME`, `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD`** — this is how you log in the first time. **The app refuses to start** if these are unset and no `SuperAdmin` account exists yet in the database.
-* **`MONGODB_URI`, `REDIS_URL`, `DATABASE_URL`** — the example values already match `docker-compose.yml` exactly (including `root`/`root` for MySQL), so if you're using Docker you can leave these as-is.
+* **`MONGODB_URI`, `REDIS_URL`, `SQL_URI`** — the example values already match `docker-compose.yml` exactly (including `root`/`root` for MySQL), so if you're using Docker you can leave these as-is.
 * **`CLIENT_ORIGIN`** — only matters once a frontend is calling the API cross-origin. Defaults to `http://localhost:5173`.
 
 ### 3. Start the databases
