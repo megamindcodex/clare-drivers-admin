@@ -8,6 +8,7 @@ node_modules/
 /src/db/generated/prisma
 
 *.log
+*.pid
 
 # OS junk
 .DS_Store

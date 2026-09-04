@@ -123,6 +123,18 @@ npx pm2 logs email-worker       # just the email worker (this is where password-
 npx pm2 list                    # status/uptime/restart count for both processes
 ```
 
+#### Stopping it
+
+`npm run shutdown:all` is the counterpart to `npm run start:all` — it undoes everything that command brought up:
+
+```bash
+npm run shutdown:all
+```
+
+It stops the API and worker via pm2, stops `pm2-watchdog.js` (using the PID `boot.sh` records to `pm2-watchdog.pid` when it starts it — watchdog isn't itself a pm2-managed process, so `pm2 stop` alone can't reach it), and stops the `redis`/`mongodb`/`mysql` containers (`docker compose stop`, not `down` — their data volumes are left in place, so the next `npm run start:all` picks up right where you left off).
+
+If you just want to pause the API/worker for a bit and don't care about freeing up the databases, `npx pm2 stop ecosystem.config.cjs` (or `npx pm2 stop all`) on its own is fine too — just be aware it leaves `pm2-watchdog.js` running as an orphaned background process, since a clean `pm2 stop` never puts an app into the `"errored"` state the watchdog is watching for. Use `npm run shutdown:all` instead if you want a clean, full stop with nothing left running.
+
 <details>
 <summary>Manual alternative (optional, not required) — two terminals, raw logs, no pm2</summary>
 

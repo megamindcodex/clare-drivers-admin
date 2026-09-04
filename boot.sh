@@ -78,6 +78,9 @@ npx pm2 start ecosystem.config.cjs   # PM2 starts "worker" then "express", in th
 echo "Starting pm2-watchdog.js to monitor the process group..."
 APP_NAMES=$(node -e "console.log(require('./ecosystem.config.cjs').apps.map((app) => app.name).join(' '))")
 nohup node pm2-watchdog.js $APP_NAMES > pm2-watchdog.log 2>&1 &
+# Recorded so shutdown.sh can find and stop this specific process later — it
+# isn't pm2-managed itself, so `pm2 stop`/`pm2 kill` wouldn't touch it.
+echo $! > pm2-watchdog.pid
 echo "pm2-watchdog running in background (PID $!), logging to pm2-watchdog.log."
 
 echo "Done."
