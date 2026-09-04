@@ -26,7 +26,7 @@
     "dev": "nodemon src/index.js",
     "worker": "node src/workers/email.worker.js",
     "worker:dev": "nodemon src/workers/email.worker.js",
-    "start:all": "bash boot.sh",
+    "start:all": "bash start.sh",
     "shutdown:all": "bash shutdown.sh",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

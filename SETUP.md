@@ -24,8 +24,8 @@ Step-by-step instructions for getting the Clare Motors Driver Administration bac
 | **Git** | To clone the repo. |
 | **Node.js 18+** | Must be installed on your machine. No `engines` field is pinned in `package.json`, but the code relies on native ESM and Node's `imports` subpath aliases (`#configs/*`, `#handlers/*`, etc.). Developed and tested on Node 22.20.0. |
 | **npm** | Ships with Node. |
-| **Docker + Docker Compose** | Must be installed **and the Docker daemon must be running** (open Docker Desktop, or start the `docker` service) before Step 3 or Step 6 — both run `docker compose` commands under the hood, and those fail immediately if Docker itself isn't running. Runs MongoDB, Redis, and MySQL locally via `docker-compose.yml`. `npm run start:all` (see Step 6) brings these containers up for you automatically once Docker is running — you do not need to run Docker Compose yourself. Without Docker at all, you'd need to stand up all three yourself and point `.env` at them. |
-| **pm2** | Must be present on the machine for Step 6, but **you don't install it yourself** — it's a regular entry in `dependencies` in `package.json`, so `npm install` in Step 1 already pulls it in locally. `boot.sh` runs it via `npx pm2` (not a bare `pm2` command), which deliberately targets that local copy in `node_modules/.bin` — **the project uses the local install, never a global one**, so there's nothing to install globally. |
+| **Docker + Docker Compose** | Must be installed **and the Docker daemon must be running** (open Docker Desktop, or start the `docker` service) before Step 3, and before Step 6 if `NODE_ENV=production` — all run `docker compose` commands under the hood, and those fail immediately if Docker itself isn't running. Runs MongoDB, Redis, and MySQL locally via `docker-compose.yml`. In **production mode**, `npm run start:all` (see Step 6) brings these containers up for you automatically once Docker is running. In **development mode**, you run `docker compose up -d` yourself as one of the manual steps `start:all` prints out. Without Docker at all, you'd need to stand up all three yourself and point `.env` at them. |
+| **pm2** | Only used in **production mode** (Step 6) — **you don't install it yourself** even then, it's a regular entry in `dependencies` in `package.json`, so `npm install` in Step 1 already pulls it in locally. `boot.sh` runs it via `npx pm2` (not a bare `pm2` command), which deliberately targets that local copy in `node_modules/.bin` — **the project uses the local install, never a global one**, so there's nothing to install globally. In development mode `start:all` never touches pm2 at all — see Step 6. |
 
 ## Steps
 
@@ -69,7 +69,7 @@ cp .env.example .env
 
 | Variable | Default | Used for |
 |---|---|---|
-| `NODE_ENV` | `development` | Standard Node environment flag. |
+| `NODE_ENV` | `development` | Standard Node environment flag. Also what `npm run start:all` reads to decide **how** to run the app — see Step 6. |
 | `CLIENT_ORIGIN` | `http://localhost:5173` | The exact origin(s) the frontend is served from — comma-separated for multiple origins (e.g. `http://localhost:5173,https://staging.example.com`). Only matters once a frontend is calling the API cross-origin — `cors()` needs an exact origin (no wildcard) to send `Access-Control-Allow-Credentials: true`. |
 | `SESSION_TTL_SECONDS` | `43200` | How long a login session stays valid, in seconds. |
 | `ACCESS_TOKEN_EXPIRES_IN` | `5m` | Access token lifetime, as a `jsonwebtoken` duration string. |
@@ -106,15 +106,34 @@ Populates `drivers`/`driver_documents` with fake data via `driver.seeder.js`. Us
 
 ### 6. Run it
 
-**`npm run start:all` is the required way to run this application — use this.** It's a single command that does everything: brings up the `mongodb`/`redis`/`mysql` containers via Docker Compose for you (no need to have run `docker compose up` yourself — Compose safely no-ops on containers already running from Step 3), waits for them to report healthy, then starts both the API and the email worker under pm2, plus the crash-group watchdog (`pm2-watchdog.js`) that stops the whole group if either process exhausts its restarts:
+**`npm run start:all` is the entry point for both modes — always run this first.** It reads `NODE_ENV` from `.env` (`start.sh`) and decides how to run the app from there. It does **not** run the same thing in both modes — which one you get depends entirely on the `NODE_ENV` value you set in Step 2:
 
 ```bash
 npm run start:all
 ```
 
-That's it — one command, nothing else to start manually.
+#### Development mode (`NODE_ENV=development` — the default)
 
-Since `start:all` runs everything under pm2 rather than printing to your terminal directly, use `npx pm2` (the same local copy `boot.sh` uses — no global install needed) to see what's happening with either process:
+This is what you want while actively writing code. `start:all` doesn't start anything itself in this mode — pm2's watch mode is deliberately off (see `ecosystem.config.cjs`), so a pm2-managed process would just sit there stale every time you save a file, which defeats the point of a dev loop. Instead it prints the manual steps and stops:
+
+```
+Project is in development mode (NODE_ENV != production).
+Nothing was started automatically — start each piece yourself:
+
+  1. docker compose up -d
+  2. npm run dev
+  3. npm run worker:dev
+
+Run steps 2 and 3 in separate terminals so both keep watching for changes.
+```
+
+Follow it exactly: `docker compose up -d` once (safely no-ops if the containers from Step 3 are already running), then `npm run dev` and `npm run worker:dev` each in their own terminal. Both use `nodemon`, so edits to either the API or the worker reload instantly — no pm2, no manual restarts. Both processes must be running — the worker is required to see password-reset codes anywhere, since email delivery isn't wired to a real transport; `sendEmail` just logs the subject and body from inside the worker process.
+
+#### Production mode (`NODE_ENV=production`)
+
+Set `NODE_ENV=production` in `.env`, then run `npm run start:all` again. This time it hands off to `boot.sh`, which does everything for you: brings up the `mongodb`/`redis`/`mysql` containers via Docker Compose (no need to have run `docker compose up` yourself), waits for them to report healthy, then starts both the API and the email worker under pm2, plus the crash-group watchdog (`pm2-watchdog.js`) that stops the whole group if either process exhausts its restarts. One command, nothing else to start manually.
+
+Since this mode runs everything under pm2 rather than printing to your terminal directly, use `npx pm2` (the same local copy `boot.sh` uses — no global install needed) to see what's happening with either process:
 
 ```bash
 npx pm2 logs                    # stream logs for every app in the group
@@ -123,31 +142,27 @@ npx pm2 logs email-worker       # just the email worker (this is where password-
 npx pm2 list                    # status/uptime/restart count for both processes
 ```
 
+Note that `ecosystem.config.cjs` has `watch: false` for both apps — a code change in production mode requires an explicit `npx pm2 restart clare-express-app` (or `email-worker`), since pm2 won't pick it up on its own. That's expected: production mode is meant to mirror how the stack stays running unattended, not to double as a dev loop.
+
 #### Stopping it
 
-`npm run shutdown:all` is the counterpart to `npm run start:all` — it undoes everything that command brought up:
+`npm run shutdown:all` is the counterpart to production mode's `start:all` — it undoes everything that mode brought up:
 
 ```bash
 npm run shutdown:all
 ```
 
-It stops the API and worker via pm2, stops `pm2-watchdog.js` (using the PID `boot.sh` records to `pm2-watchdog.pid` when it starts it — watchdog isn't itself a pm2-managed process, so `pm2 stop` alone can't reach it), and stops the `redis`/`mongodb`/`mysql` containers (`docker compose stop`, not `down` — their data volumes are left in place, so the next `npm run start:all` picks up right where you left off).
+It stops the API and worker via pm2, stops `pm2-watchdog.js` (using the PID `boot.sh` records to `pm2-watchdog.pid` when it starts it — watchdog isn't itself a pm2-managed process, so `pm2 stop` alone can't reach it), and stops the `redis`/`mongodb`/`mysql` containers (`docker compose stop`, not `down` — their data volumes are left in place, so the next production-mode `npm run start:all` picks up right where you left off).
 
 If you just want to pause the API/worker for a bit and don't care about freeing up the databases, `npx pm2 stop ecosystem.config.cjs` (or `npx pm2 stop all`) on its own is fine too — just be aware it leaves `pm2-watchdog.js` running as an orphaned background process, since a clean `pm2 stop` never puts an app into the `"errored"` state the watchdog is watching for. Use `npm run shutdown:all` instead if you want a clean, full stop with nothing left running.
 
-<details>
-<summary>Manual alternative (optional, not required) — two terminals, raw logs, no pm2</summary>
-
-Only use this if you specifically want to watch unbuffered `nodemon`/console output instead of pm2's logs. You are responsible for the databases yourself first (`docker compose up -d`, or ensure they're already running from Step 3):
+By default, `shutdown:all` leaves both apps *registered* with pm2 — just stopped, not deleted — so the next `npm run start:all` (production mode) can bring them straight back up. Pass `--clean` to delete the pm2 registrations entirely instead, so the next production-mode start registers both apps from scratch off `ecosystem.config.cjs`:
 
 ```bash
-npm run dev          # Express API, with reload
-npm run worker:dev   # email worker
+npm run shutdown:all -- --clean
 ```
 
-Both processes must be running — the worker is required to see password-reset codes anywhere, since email delivery isn't wired to a real transport; `sendEmail` just logs the subject and body from inside the worker process.
-
-</details>
+If you were in development mode instead, there's no pm2 stack to stop — just `Ctrl+C` the `npm run dev`/`npm run worker:dev` terminals, and run `docker compose stop` yourself if you want to free up the databases too.
 
 ### 7. Verify it's up
 
