@@ -70,7 +70,7 @@ cp .env.example .env
 | Variable | Default | Used for |
 |---|---|---|
 | `NODE_ENV` | `development` | Standard Node environment flag. |
-| `CLIENT_ORIGIN` | `http://localhost:5173` | The exact origin the frontend is served from. Only matters once a frontend is calling the API cross-origin — `cors()` needs an exact origin (no wildcard) to send `Access-Control-Allow-Credentials: true`. |
+| `CLIENT_ORIGIN` | `http://localhost:5173` | The exact origin(s) the frontend is served from — comma-separated for multiple origins (e.g. `http://localhost:5173,https://staging.example.com`). Only matters once a frontend is calling the API cross-origin — `cors()` needs an exact origin (no wildcard) to send `Access-Control-Allow-Credentials: true`. |
 | `SESSION_TTL_SECONDS` | `43200` | How long a login session stays valid, in seconds. |
 | `ACCESS_TOKEN_EXPIRES_IN` | `5m` | Access token lifetime, as a `jsonwebtoken` duration string. |
 

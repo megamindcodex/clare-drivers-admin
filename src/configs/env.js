@@ -22,10 +22,22 @@ const validateEnv = () => {
 
 validateEnv();
 
+/**
+ * Parses a comma-separated list of allowed CORS origins from an env var,
+ * trimming whitespace and dropping empty entries.
+ * @param {string} rawValue - The raw, comma-separated env var value.
+ * @returns {string[]} The list of allowed origins.
+ */
+const parseClientOrigins = (rawValue) =>
+  rawValue
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: Number(process.env.PORT ?? 4000),
-  clientOrigin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
+  clientOrigins: parseClientOrigins(process.env.CLIENT_ORIGIN ?? "http://localhost:5173"),
   mongodbUri: process.env.MONGODB_URI,
   redisUrl: process.env.REDIS_URL,
   sessionTtlSeconds: Number(process.env.SESSION_TTL_SECONDS ?? 43200),

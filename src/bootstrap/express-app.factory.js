@@ -10,6 +10,24 @@ import userRoutes from "#routes/user.routes.js";
 import overviewRoutes from "#routes/overview.routes.js";
 import { errorHandler } from "#errors/error-handler.middleware.js";
 import { env } from "#configs/env.js";
+import { AppError } from "#errors/app-error.js";
+import { ErrorCodes } from "#errors/error-codes.js";
+
+/**
+ * Decides whether an incoming request's Origin header is allowed to access
+ * this API, per the `cors` package's per-request origin callback contract.
+ * @param {string | undefined} requestOrigin - The `Origin` header value, or `undefined` for non-browser requests.
+ * @param {(error: Error | null, allow?: boolean) => void} callback - Invoked with the allow/deny decision.
+ * @returns {void}
+ */
+const resolveCorsOrigin = (requestOrigin, callback) => {
+  // Requests with no Origin header (e.g. server-to-server, curl) are allowed through.
+  if (!requestOrigin || env.clientOrigins.includes(requestOrigin)) {
+    return callback(null, true);
+  }
+
+  return callback(new AppError("Origin not allowed by CORS.", { code: ErrorCodes.FORBIDDEN }));
+};
 
 /**
  * Builds and configures the Express application: security headers (helmet),
@@ -25,7 +43,9 @@ const createExpressApp = () => {
   // credentials: true + an explicit (non-wildcard) origin is required so the
   // browser will accept the response to a `withCredentials: true` request —
   // that's what lets the frontend send/receive the httpOnly refreshToken cookie.
-  app.use(cors({ origin: env.clientOrigin, credentials: true }));
+  // A callback (rather than a static origin) is used so multiple allowed
+  // origins (env.clientOrigins) can each be echoed back individually.
+  app.use(cors({ origin: resolveCorsOrigin, credentials: true }));
   app.use(morgan("dev")); // Logs incoming requests.
   app.use(express.json()); // Parses JSON request bodies.
   app.use(cookieParser()); // Parses cookies into req.cookies (used for the refresh token).
