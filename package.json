@@ -30,6 +30,7 @@
     "shutdown:all": "bash shutdown.sh",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "node src/db/prisma/seeders/driver.seeder.js"
   },
   "dependencies": {
