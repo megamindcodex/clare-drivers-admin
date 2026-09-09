@@ -33,6 +33,8 @@ A suspended or banned account is blocked from every authenticated route (includi
 
 ## 2. Feature / Route Index
 
+> `GET /health` also exists outside the table below — an unauthenticated infra endpoint (not part of the business API surface) that returns `200 ok`, used by an external cron pinger to keep the Render free-tier instance from spinning down after 15 minutes of inactivity.
+
 | Feature | Method | Route | Auth | Permission |
 |---|---|---|---|---|
 | Register account | `POST` | `/api/auth/register` | — | — |

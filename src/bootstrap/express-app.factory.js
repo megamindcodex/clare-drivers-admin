@@ -32,6 +32,10 @@ const createExpressApp = () => {
   app.use(express.json()); // Parses JSON request bodies.
   app.use(cookieParser()); // Parses cookies into req.cookies (used for the refresh token).
 
+  // Unauthenticated, unversioned — pinged by an external uptime cron
+  // (cron-job.org) to keep Render's free-tier instance from spinning down.
+  app.get("/health", (req, res) => res.status(200).send("ok"));
+
   app.use("/api/auth", authRoutes);
   app.use("/api/drivers", driverRoutes);
   app.use("/api/users", userRoutes);
