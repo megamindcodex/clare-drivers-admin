@@ -21,8 +21,12 @@ const REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
 const setRefreshTokenCookie = (res, refreshToken) => {
   res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
     httpOnly: true,
+    // Frontend and API are deployed on different origins — a cross-site
+    // cookie requires SameSite=None, which browsers only honor alongside
+    // Secure. Locally (same-origin, http://localhost) Lax + non-Secure
+    // is what allows the cookie to work without HTTPS in dev.
     secure: env.nodeEnv === "production",
-    sameSite: "lax",
+    sameSite: env.nodeEnv === "production" ? "none" : "lax",
     maxAge: sessionConfig.ttlSeconds * 1000,
   });
 };
