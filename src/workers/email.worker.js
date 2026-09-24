@@ -40,11 +40,14 @@ const handleHealthCheck = (req, res) => {
 
 /**
  * Minimal HTTP server bound to Render's assigned port so this worker can
- * run as a free Web Service instead of a paid Background Worker.
+ * run as a free Web Service instead of a paid Background Worker. Render
+ * assigns each service its own `PORT`, so this equals `env.port` there —
+ * locally, both processes share one `.env`, so `WORKER_HEALTH_CHECK_PORT`
+ * must be set to a different port than the API's to avoid EADDRINUSE.
  * @type {import("node:http").Server}
  */
 const healthCheckServer = createServer(handleHealthCheck);
 
-healthCheckServer.listen(env.port, () => {
-  logger.info(`Email worker health check listening on port ${env.port}`);
+healthCheckServer.listen(env.workerHealthCheckPort, () => {
+  logger.info(`Email worker health check listening on port ${env.workerHealthCheckPort}`);
 });

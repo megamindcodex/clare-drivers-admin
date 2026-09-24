@@ -35,6 +35,8 @@ Set the full variable set on **both** Render services (see `SETUP.md` for what e
 
 Functionally, the worker only needs `REDIS_URL` (its BullMQ connection) and optionally `NODE_ENV` (log level) — the rest are set purely to satisfy `env.js`'s shared validation, not because the worker uses them.
 
+**Local-only exception — `WORKER_HEALTH_CHECK_PORT`:** on Render, the API and worker are separate services, so each gets its own independently-assigned `PORT` and the worker's health-check server can safely bind `env.port`. Locally, both processes read the same `.env`, so binding both to `PORT` causes `EADDRINUSE` the moment they run side by side (e.g. under the PM2 stack in `ecosystem.config.cjs`). `WORKER_HEALTH_CHECK_PORT` gives the worker's health-check server a distinct local port; it's optional and falls back to `PORT` when unset, so **Render needs no configuration change** — only the local `.env` needs it set to a different value than `PORT`.
+
 ---
 
 ## 4. Database — one shared instance, migrations applied manually
